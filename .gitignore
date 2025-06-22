@@ -9,3 +9,9 @@
 #!/bitrix/php_interface/dbconn.php
 #Хранить Upload тоже нет смысла
 /upload/
+
+
+# логгеры
+__bx_log.log
+log.txt
+/local/logs/
