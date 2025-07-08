@@ -1,6 +1,6 @@
 <?
 
-namespace Demo\Logger;
+namespace Otus\Logger;
 
 use Bitrix\Main\Diag\ExceptionHandlerLog;
 use Bitrix\Main\Diag\FileLogger;

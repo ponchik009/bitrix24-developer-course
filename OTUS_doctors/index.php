@@ -3,7 +3,7 @@
 require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php");
 /** @global $APPLICATION */
 $APPLICATION->SetTitle('Врачи');
-$APPLICATION->SetAdditionalCSS('/doctors/styles.css');
+$APPLICATION->SetAdditionalCSS('/OTUS_doctors/styles.css');
 
 use \Models\Lists\DoctorsPropertyValuesTable as DoctorsTable;
 use \Models\Lists\ProceduresPropertyValuesTable as ProceduresTable;
