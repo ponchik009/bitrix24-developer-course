@@ -188,9 +188,9 @@ if (CUserOptions::GetOption('intranet', 'left_menu_collapsed') === 'Y')
 
 ?><table class="bx-layout-table<?=$layoutMode?>"><?
 	?><tr><td class="bx-layout-header"><?
-		if ((!$isBitrix24Cloud || $USER->IsAdmin()) && !defined('SKIP_SHOW_PANEL')):
+	if ((!$isBitrix24Cloud || $USER->IsAdmin()) && !defined('SKIP_SHOW_PANEL')):
 			?><div id="panel"><?$APPLICATION->ShowPanel();?></div><?
-		endif;
+	endif;
 
 if ($isBitrix24Cloud)
 {

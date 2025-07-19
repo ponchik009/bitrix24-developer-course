@@ -5,6 +5,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
 }
 
 spl_autoload_register(function (string $class): void {
+	// vd($class);
     // if (!str_contains($class, 'Models')) {
     //     return;
     // }

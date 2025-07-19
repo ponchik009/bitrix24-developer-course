@@ -1,8 +1,8 @@
 <?
-if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
-
-$arTemplate = Array(
-	"NAME" => \Bitrix\Main\Localization\Loc::getMessage("TEMPLATE_NAME"),
-	"DESCRIPTION"=> \Bitrix\Main\Localization\Loc::getMessage("TEMPLATE_DESCRIPTION")
+$arTemplate = array (
+  'NAME' => 'Битрикс24 - Социальный интранет',
+  'DESCRIPTION' => 'В основе интерфейса - концепция Социального интранета, в которой объединены классические рабочие инструменты и социальный формат коммуникаций. Битрикс24 повышает эффективность работы и позволяет каждому из сотрудников стать успешнее.',
+  'SORT' => '',
+  'TYPE' => '',
 );
 ?>
