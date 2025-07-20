@@ -2,23 +2,16 @@
 
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/header.php");
 
-$APPLICATION->SetTitle('Курсы валют');
+$APPLICATION->SetTitle("Курсы валют");
 
-?>
-
-<?
-$APPLICATION->includeComponent(
+?><?$APPLICATION->IncludeComponent(
 	"otus:currency.viewer",
 	"",
-	[
-		"CURRENCY" => ["EUR", 'USD']
-	]
-);
-?>
-
-<?
+	Array(
+		"CURRENCY" => array("USD","EUR")
+	)
+);?><?
 
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/footer.php");
 
 ?>
-

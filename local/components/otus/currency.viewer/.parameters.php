@@ -2,7 +2,9 @@
 if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
 /** @var array $arCurrentValues */
 
-if(!CModule::IncludeModule("iblock"))
+use \Bitrix\Main\Loader;
+
+if(!Loader::includeModule("iblock") || !Loader::includeModule("currency"))
 	return;
 	
 $currencyList = \Bitrix\Currency\CurrencyManager::getCurrencyList();
@@ -19,7 +21,7 @@ $arComponentParameters = array(
 			"PARENT" => "MAIN",
 			"NAME"=>'Валюта',
 			"TYPE"=>"LIST",
-			'MULTUPLE' => 'Y',
+			'MULTIPLE' => 'Y',
 			"DEFAULT"=>"20",
 			'VALUES' => $currencyList,
 		)
