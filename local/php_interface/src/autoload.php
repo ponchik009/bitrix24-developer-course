@@ -12,11 +12,8 @@ spl_autoload_register(function (string $class): void {
     $class = str_replace('\\', '/', $class);
     
     $path = __DIR__ . '/' . $class . '.php';
-    
-    vd($path);
 
     if (is_file($path)) {
-    	vd($path);
         require_once $path;
     }
 });
