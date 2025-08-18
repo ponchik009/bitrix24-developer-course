@@ -1,4 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
+	function parseCustomDate(dateStr) {
+		const [datePart, timePart] = dateStr.split(' ');
+		const [day, month, year] = datePart.split('.');
+		const [hours, minutes, seconds] = timePart.split(':');
+		
+		// Создаем дату в локальной таймзоне (но интерпретируем как UTC+3)
+		// Важно: new Date() с аргументами интерпретирует их как локальное время
+		const date = new Date(
+		`${year}-${month}-${day}T${hours}:${minutes}:${seconds}+03:00`
+		);
+		
+		return date.toISOString();
+	}
+	
     BX.ready(function () {
 		document.querySelectorAll("a[data-procedure]").forEach(link => {
 			link.addEventListener("click", function(e) {
@@ -79,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		                          	const data = Array.from(form.querySelectorAll("input")).reduce((acc, input) => {
 			                          	return {
 			                          		...acc,
-			                          		[input.name]: input.value,
+			                          		[input.name]: input.name !== "DATETIME" ? input.value : parseCustomDate(input.value),
 			                          	}
 		                        	}, {});
 		                          	

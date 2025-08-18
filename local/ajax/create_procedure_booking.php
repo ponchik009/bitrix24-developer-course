@@ -14,6 +14,7 @@ use Bitrix\Main\Loader;
 use Bitrix\Iblock\Elements\ElementProceduresBookingTable;
 
 header('Content-Type: application/json; charset=utf-8');
+date_default_timezone_set('Europe/Moscow');
 
 try {
 	$request = Application::getInstance()->getContext()->getRequest();
@@ -33,15 +34,18 @@ try {
 		// получение полей		
 		$patientPhone = preg_replace('/\D/i', '', trim($request->getPost("PHONE")));
 		$patientFIO = trim($request->getPost("NAME"));
-		$bookingDatetime = trim($request->getPost("DATETIME"));
+		$bookingDatetime = $request->getPost("DATETIME");
 		$doctorId = $request->getPost("DOCTOR");
 		$procedureId = $request->getPost("PROCEDURE");
 		
 		// проверка существования записей на ближайшее время
-		$bookingDatetimeObj = new \Bitrix\Main\Type\DateTime($bookingDatetime, "d.m.Y H:i:s");
-		// добавляем 5 часов из-за таймзоны? ужас
-		$bookingDatetimeFilterStart = (clone $bookingDatetimeObj)->add("-6 hour")->format("Y-m-d H:i:s");
-		$bookingDatetimeFilterEnd = (clone $bookingDatetimeObj)->add("-4 hour")->format("Y-m-d H:i:s");
+		$bookingDatetimeObj = \Bitrix\Main\Type\DateTime::createFromPhp(
+			new \DateTime($bookingDatetime)
+		);
+		// стандартный ->format у битриксовой даты кастит в локальное время, что нам не подходит
+		// либо я не понимаю, как это работает
+		$bookingDatetimeFilterStart = date("Y-m-d H:i:s", (clone $bookingDatetimeObj)->add("-1 hour")->getTimestamp());
+		$bookingDatetimeFilterEnd = date("Y-m-d H:i:s", (clone $bookingDatetimeObj)->add("1 hour")->getTimestamp());
 		$filter = [
 				'DOCTOR_VALUE' => $doctorId,
 				// фильтр по дате
@@ -72,7 +76,7 @@ try {
 			'NAME' => "Запись от " . date("d.m.Y H:i:s"),
 			"IBLOCK_ID" => ElementProceduresBookingTable::getEntity()->getIblock()->getId(),
 			"PROPERTY_VALUES" => [
-				"BOOKING_DATETIME" => $bookingDatetime,
+				"BOOKING_DATETIME" => date("Y-m-d H:i:s", $bookingDatetimeObj->getTimestamp()),
 				"PROCEDURE" => $procedureId,
 				"DOCTOR" => $doctorId,
 				"PATIENT_FIO" => $patientFIO,
@@ -89,7 +93,7 @@ try {
 			exit();
 		} else {
 			echo json_encode([
-				"data" => null,
+				"data" => [$bookingDatetimeFilterStart, $bookingDatetimeFilterEnd],
 				"message" => "Запись успешно создана!",
 				"result" => true
 			], JSON_UNESCAPED_UNICODE);
