@@ -2,8 +2,10 @@
 
 // автолоадер проекта
 require_once __DIR__ . '/../app/autoload.php';
-// не работает.. :(
+
 require_once __DIR__ . '/src/autoload.php';
+
+require_once __DIR__ . '/src/event_handler.php';
 
 //require_once __DIR__ . '/src/Otus/Orm/PatientCardTable.php';
 //require_once __DIR__ . '/src/Otus/Orm/PatientTable.php';

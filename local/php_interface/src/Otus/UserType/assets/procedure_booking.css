@@ -1,0 +1,11 @@
+.procedure-booking-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.procedure-booking-form label {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
