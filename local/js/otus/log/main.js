@@ -7,7 +7,9 @@ BX.onCustomEvent = function (eventObject, eventName, eventParams, secureParams) 
 			? eventObject 
 			: null;
 			
-	if (realEventName) {
+	if (
+		realEventName 
+	) {
 		// console.log(
 		// 	'%c' + realEventName,
 		// 	'background: #222; color: #bada55; font-weight: bold; padding: 3px 4px;'

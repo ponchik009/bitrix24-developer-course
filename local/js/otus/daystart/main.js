@@ -9,34 +9,45 @@
 	 * 3. Открывает модальное окно подтверждения для старта рабочего дня
  	*/
 	function init() {
-		BX.addCustomEvent("ontimemanwindowopen", function () {
-			console.log('ontimemanwindowopen');
-			
-			console.log(BX.PopupWindowManager);
+		function setupStartButton() {
 			const popup = BX.PopupWindowManager.getPopupById("timeman_main");
+			
+			if (!popup) {
+				return;
+			}
+			
 			const container = popup.contentContainer;
 			const startButton = container.querySelector(".ui-btn-icon-start");
 			
+			// сценарий, когда рабочий день начат
 			if (!startButton) {
 				console.log("Не нашел кнопку для старта рабочего дня");
 				return;
 			}
 			
-			if (!startButton.innerText.toLocaleLowerCase().includes("начать")) {
-				console.log("Рабочий день уже начат");
-				return;
-			}
-			
+			// сценарий, когда рабочий день не начат
 			const startButtonCopy = startButton.cloneNode(true);
 			startButton.replaceWith(startButtonCopy);
-			startButton.style.display = "none";
-			
+
 			BX.unbindAll(startButtonCopy);
 			BX.bind(startButtonCopy, 'click', function(e) {
 		        showConfirmationModal(
-		        	() => startButton.click()
+		        	() => {
+		        		startButtonCopy.replaceWith(startButton);
+		        		startButton.click();
+		        	}
 		    	);
 		    });
+		}
+		
+		BX.addCustomEvent("ontimemanwindowopen", () => {
+			setupStartButton();
+		});
+		
+		BX.addCustomEvent('onAjaxSuccessFinish', function(e) {
+			if (e && e.url.startsWith("/bitrix/tools/timeman.php?action=close")) {
+				setupStartButton();
+			}
 		});
 	}
 	
@@ -78,9 +89,9 @@
                     className: 'ui-btn ui-btn-success', // доп. классы
                     events: {
                       click: function(...args) {
-                      	BX.PopupWindowManager.getCurrentPopup()?.close();
-                      	
                       	callback();
+                      	
+                      	BX.PopupWindowManager.getCurrentPopup()?.close();
                       }
                     }
                 }),
