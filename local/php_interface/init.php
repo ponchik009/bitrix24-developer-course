@@ -12,6 +12,9 @@ require_once __DIR__ . '/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
+Bitrix\Main\Loader::includeModule("crm");
+Bitrix\Main\Loader::includeModule("iblock");
+
 function vd($data)
 {
     echo '<script>console.log(' . json_encode($data, JSON_UNESCAPED_UNICODE) . ');</script>';
