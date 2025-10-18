@@ -14,3 +14,6 @@ $eventManager->addEventHandler('main', 'OnProlog', ['Otus\JsExtensions\JsExtensi
 $eventManager->addEventHandler('crm', 'OnAfterCrmDealUpdate', ['Otus\Event\SynchronizationDealAndRequest', 'synchronizeToRequestOnDealUpdate']);
 $eventManager->addEventHandler('iblock', 'OnAfterIBlockElementAdd', ['Otus\Event\SynchronizationDealAndRequest', 'synchronizeToDealOnRequestUpdate']);
 $eventManager->addEventHandler('iblock', 'OnAfterIBlockElementUpdate', ['Otus\Event\SynchronizationDealAndRequest', 'synchronizeToDealOnRequestUpdate']);
+
+// Rest методы для работы с таблицей пациентов
+$eventManager->addEventHandlerCompatible('rest', 'OnRestServiceBuildDescription', ['Otus\Rest\RestEventsRegister', 'OnRestServiceBuildDescriptionHandler']);
