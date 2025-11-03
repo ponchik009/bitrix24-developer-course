@@ -9,3 +9,11 @@
 #!/bitrix/php_interface/dbconn.php
 #Хранить Upload тоже нет смысла
 /upload/
+
+__bx_log.log
+
+/local/php_interface/vendor
+
+/local/logs
+
+.env
