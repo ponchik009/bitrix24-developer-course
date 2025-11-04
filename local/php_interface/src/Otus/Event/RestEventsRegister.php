@@ -21,9 +21,10 @@ class RestEventsRegister {
         return [
             'otus.crm' => [
                 'otus.crm.addOrder' => ['Otus\Rest\DealController', 'add'],
-                'otus.crm.getClients' => ['Otus\Rest\ContactController', 'get'],
-                'otus.crm.getBranches' => ['Otus\Rest\BranchController', 'get'],
-                'otus.crm.getMenu' => ['Otus\Rest\MenuController', 'get'],
+                'otus.crm.getClients' => ['Otus\Rest\ContactController', 'getAll'],
+                'otus.crm.getBranches' => ['Otus\Rest\BranchController', 'getAll'],
+                'otus.crm.getMenu' => ['Otus\Rest\MenuController', 'getAll'],
+                'otus.crm.getAvailabelMenu' => ['Otus\Rest\MenuController', 'getAvailabelMenu'],
             ],
         ];
     }

@@ -22,16 +22,50 @@ class DealController {
     public static function add ($arParams, $navStart, \CRestServer $server)
     {
     	// лог входящих данных
-    	RestHelper::logAction('order add request receiving', true, $arParams);
+    	RestHelper::logAction('add order', true, $arParams);
     	
     	try {
-	        
-	        RestHelper::processResult($result);
+  			if (
+  				empty($arParams['client']['id']) 
+  				&& empty($arParams['client']['phone'])
+  			) {
+  				RestHelper::sendBadRequestError('add order', 'Информация о клиенте не определена. Укажите phone или id в поле client');
+    		}
+    		
+  			if (
+  				empty($arParams['branch']['id']) 
+  			) {
+  				RestHelper::sendBadRequestError('add order', 'Информация о филиале не определена. Укажите id в поле branch');
+    		}
+    		
+    		if (
+    			empty($arParams['receiptDatetime'])
+    		) {
+    			RestHelper::sendBadRequestError('add order', 'Информация о времени получения не определена. Укажите receiptDatetime');
+    		}
+    		
+    		if (
+    			empty($arParams['address']['text'])
+    		) {
+    			RestHelper::sendBadRequestError('add order', 'Информация об адресе не определена. Укажите text в поле address');
+    		}
+    		
+    		if (
+    			empty($arParams['items'])
+    		) {
+    			RestHelper::sendBadRequestError('add order', 'Информация о составе заказа не определена. Укажите массив items в запросе');
+    		}
+    		
+    		$dealService = new \Otus\Service\DealService();
+    		
+    		$addResult = $dealService->add($arParams);
+    		
+	        return RestHelper::processResult($addResult);
     	} catch (RestException $ex) {
     		throw $ex;
     	} catch (\Throwable $ex) {
         	// общий лог ошибки
-            RestHelper::sendFatalError('patient add', $ex);
+            RestHelper::sendFatalError('add order', $ex);
     	}
     }
     

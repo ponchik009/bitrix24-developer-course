@@ -19,19 +19,24 @@ class BranchController {
      * @return mixed
      * @throws RestException
      */
-    public static function get ($arParams, $navStart, \CRestServer $server)
+    public static function getAll ($arParams, $navStart, \CRestServer $server)
     {
     	// лог входящих данных
-    	RestHelper::logAction('order add request receiving', true, $arParams);
+    	RestHelper::logAction('get branches', true, $arParams);
     	
     	try {
-
-	        RestHelper::processResult($result);
+    		$branchService = new \Otus\Service\BranchService();
+    		
+			$branches = $branchService->getAll();
+			
+        	RestHelper::logAction('get branches', true, $branches);
+        	
+        	return $branches;
     	} catch (RestException $ex) {
     		throw $ex;
     	} catch (\Throwable $ex) {
         	// общий лог ошибки
-            RestHelper::sendFatalError('patient add', $ex);
+            RestHelper::sendFatalError('get branches', $ex);
     	}
     }
     

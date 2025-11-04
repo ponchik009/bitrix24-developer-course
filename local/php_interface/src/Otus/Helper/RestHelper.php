@@ -13,7 +13,7 @@ class RestHelper {
      * 
      * @param $result
      */
-	public function processResult($result) {
+	public static function processResult($result) {
         if ($result->isSuccess())
         {
             $id = $result->getId();
@@ -54,6 +54,24 @@ class RestHelper {
             $exception->getMessage(),
             'ERROR_FATAL',
             \CRestServer::STATUS_INTERNAL
+        );
+    }
+    
+    /**
+     * Отправляет ошибку, связанную с входными параметрами
+     * 
+     * @param string $code - код запроса (действие, которое совершалось)
+     * @param \Throwable $exception - полученная ошибка
+     */
+    public static function sendBadRequestError($code, $message) {
+    	self::logAction($code, false, [
+    		'error_messages' => [$message],
+    	]);
+    	
+        throw new RestException(
+            Json::encode([$message]),
+            'ERROR_BAD_REQUEST',
+            \CRestServer::STATUS_WRONG_REQUEST
         );
     }
     

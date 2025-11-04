@@ -11,7 +11,7 @@ class UserFieldHelper {
 	public static function getUserFieldsByCode($code) {
 		$result = [];
 		
-		$entityFields = UserFieldTable::getList([
+		$entityFields = \Bitrix\Main\UserFieldTable::getList([
 			'filter' => [
 				'ENTITY_ID' => $code,
 			]

@@ -5,8 +5,8 @@ namespace Otus\Service;
 use Bitrix\Main\UserFieldTable;
 
 abstract class BaseCRMService {
-	protected $factory;
-	protected $fields;
+	public $factory;
+	public $fields;
 	
 	/**
 	 * Базовый конструктор с получением фабрики по XML_ID и кастомных полей
@@ -17,7 +17,7 @@ abstract class BaseCRMService {
 		$entityTypeId = $this->factory->getEntityTypeId();
 		
 		$this->fields = \Otus\Helper\UserFieldHelper::getUserFieldsByCode(
-			$entityTypeId > 128 ? "CRM_$entityTypeId" : $code
+			$entityTypeId > 128 ? "CRM_{$this->factory->getType()->getId()}" : $code
 		);
 	}
 }
