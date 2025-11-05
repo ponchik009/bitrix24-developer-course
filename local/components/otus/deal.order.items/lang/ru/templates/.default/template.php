@@ -1,0 +1,24 @@
+<?php
+$MESS['DEAL_ORDER_ITEMS_TITLE'] = 'Элементы заказа';
+$MESS['DEAL_ORDER_ITEMS_ADD_BUTTON'] = 'Добавить элемент';
+$MESS['DEAL_ORDER_ITEMS_MENU_ITEM'] = 'Элемент меню';
+$MESS['DEAL_ORDER_ITEMS_QUANTITY'] = 'Количество';
+$MESS['DEAL_ORDER_ITEMS_ADDITIVES'] = 'Добавки';
+$MESS['DEAL_ORDER_ITEMS_CUSTOM_PRICE'] = 'Своя цена';
+$MESS['DEAL_ORDER_ITEMS_CUSTOM_PRICE_PLACEHOLDER'] = 'Оставить цену из меню';
+$MESS['DEAL_ORDER_ITEMS_CANCEL_BUTTON'] = 'Отмена';
+$MESS['DEAL_ORDER_ITEMS_SELECT_MENU_ITEM'] = 'Выберите элемент меню';
+$MESS['DEAL_ORDER_ITEMS_NO_ITEMS'] = 'Нет элементов заказа';
+$MESS['DEAL_ORDER_ITEMS_COLUMN_ITEM'] = 'Элемент';
+$MESS['DEAL_ORDER_ITEMS_COLUMN_PRICE'] = 'Цена';
+$MESS['DEAL_ORDER_ITEMS_COLUMN_QUANTITY'] = 'Кол-во';
+$MESS['DEAL_ORDER_ITEMS_COLUMN_ADDITIVES'] = 'Добавки';
+$MESS['DEAL_ORDER_ITEMS_COLUMN_TOTAL'] = 'Сумма';
+$MESS['DEAL_ORDER_ITEMS_COLUMN_ACTIONS'] = 'Действия';
+$MESS['DEAL_ORDER_ITEMS_EDIT_BUTTON'] = 'Изменить';
+$MESS['DEAL_ORDER_ITEMS_DELETE_BUTTON'] = 'Удалить';
+$MESS['DEAL_ORDER_ITEMS_TOTAL_SUM'] = 'Итого';
+$MESS['DEAL_ORDER_ITEMS_SELECT_MENU_ITEM_ERROR'] = 'Выберите элемент меню';
+$MESS['DEAL_ORDER_ITEMS_QUANTITY_ERROR'] = 'Некорректное количество элементов';
+$MESS['DEAL_ORDER_ITEMS_DELETE_CONFIRM'] = 'Удалить этот элемент заказа?';
+$MESS['DEAL_ORDER_ITEMS_ADDING'] = 'Добавление в заказ...';
