@@ -8,10 +8,6 @@ use Bitrix\Main\Entity;
 
 class DealOrderItemsComponent extends CBitrixComponent implements \Bitrix\Main\Engine\Contract\Controllerable
 {
-    private $orderEntityId = 'ORDER'; // ID вашего смарт-процесса заказов
-    private $menuEntityId = 'MENU'; // ID вашего смарт-процесса меню
-    private $additivesEntityId = 'ADDITIVES'; // ID вашего смарт-процесса добавок
-    
     private $orderItems = [
 
 	];

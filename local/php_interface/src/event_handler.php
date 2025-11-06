@@ -1,8 +1,10 @@
 <?
 
-use Bitrix\Main;
+use Bitrix\Main\EventManager;
+use Bitrix\Main\Event;
+use Bitrix\Main\EventResult;
 
-$eventManager = Main\EventManager::getInstance();
+$eventManager = EventManager::getInstance();
 
 // Rest методы для работы с заказами
 $eventManager->addEventHandlerCompatible('rest', 'OnRestServiceBuildDescription', ['Otus\Event\RestEventsRegister', 'OnRestServiceBuildDescriptionHandler']);
@@ -32,5 +34,34 @@ $eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemAdd_1072', func
 	}
 	
 	return true;
+});
+
+$eventManager->addEventHandler('crm', 'onEntityDetailsTabsInitialized', function(Event $event) {
+    $entityId = $event->getParameter('entityID');
+    $entityTypeID = $event->getParameter('entityTypeID');
+    $tabs = $event->getParameter('tabs');
+
+	if ($entityTypeID == \CCrmOwnerType::Deal) {
+        $tabs[] = [
+            'id' => 'deal_order_items',
+            'name' => 'Элементы заказа',
+            'enabled' => !empty($entityId),
+            'loader' => [
+                'serviceUrl' => '/local/components/otus/deal.order.items/lazyload.ajax.php?&site=' . \SITE_ID . '&' . \bitrix_sessid_get(),
+                'componentData' => [
+                    'template' => '',
+                    'params' => [
+                        // Параметры вызываемого компонента ($arParams)
+                        'DEAL_ID' => $entityId,
+                        'CAN_EDIT' => true,
+                    ]
+                ]
+            ]
+        ];
+	}
+
+    return new EventResult(EventResult::SUCCESS, [
+        'tabs' => $tabs,
+    ]);
 });
 
