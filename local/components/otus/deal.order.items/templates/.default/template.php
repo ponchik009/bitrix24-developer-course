@@ -10,7 +10,7 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
 <div id="deal-order-items-<?=$arParams['DEAL_ID']?>" class="deal-order-items">
     <div class="deal-order-items-header">
         <h3><?=Loc::getMessage('DEAL_ORDER_ITEMS_TITLE')?></h3>
-        <?php if ($arResult['CAN_EDIT']): ?>
+        <?php if ($arParams['CAN_EDIT']): ?>
             <button type="button" class="ui-btn ui-btn-primary" onclick="showAddItemForm()">
                 <?=Loc::getMessage('DEAL_ORDER_ITEMS_ADD_BUTTON')?>
             </button>
@@ -45,13 +45,6 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
                 </div>
             </div>
 
-            <div class="ui-form-row">
-                <label class="ui-form-label"><?=Loc::getMessage('DEAL_ORDER_ITEMS_CUSTOM_PRICE')?></label>
-                <div class="ui-form-content">
-                    <input type="number" id="custom-price" class="ui-ctl-element" step="0.01" placeholder="<?=Loc::getMessage('DEAL_ORDER_ITEMS_CUSTOM_PRICE_PLACEHOLDER')?>">
-                </div>
-            </div>
-
             <div class="ui-form-buttons">
                 <button type="button" class="ui-btn ui-btn-primary" onclick="addOrderItem()" id="add-item-btn">
                     <?=Loc::getMessage('DEAL_ORDER_ITEMS_ADD_BUTTON')?>
@@ -71,20 +64,24 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
     <!-- Итоговая сумма -->
     <div class="order-total">
         <div class="ui-alert ui-alert-success">
-            <strong><?=Loc::getMessage('DEAL_ORDER_ITEMS_TOTAL_SUM')?>:</strong>
-            <?=number_format($arResult['TOTAL_SUM'], 2)?> ₽
+            <strong><?=Loc::getMessage('DEAL_ORDER_ITEMS_TOTAL_SUM')?>: </strong>
+             <?=number_format(0, 2)?> ₽
         </div>
     </div>
 </div>
 
 <script>
+	let menuItems = [];
+	let currentMenuItemAdditives = [];
+	
+	let selectedMenuItem = null;
+	let selectedAdditives = [];
+	
+	const dealId = <?=CUtil::PhpToJSObject($arParams['DEAL_ID'])?>;
+	const canEdit = <?=CUtil::PhpToJSObject($arParams['CAN_EDIT'])?>;
+	
     // JavaScript функционал
     BX.ready(function() {
-        window.dealOrderItems = {
-            dealId: <?=CUtil::PhpToJSObject($arResult['DEAL_ID'])?>,
-            canEdit: <?=CUtil::PhpToJSObject($arResult['CAN_EDIT'])?>
-        };
-
         // Загрузка элементов меню
         loadMenuItems();
         
@@ -103,143 +100,142 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
     function resetAddItemForm() {
         BX('menu-item-select').value = '';
         BX('item-quantity').value = '1';
-        BX('custom-price').value = '';
         BX('additives-container').innerHTML = '';
         BX('add-item-btn').disabled = false;
+        
+        selectedAdditives = [];
+        selectedMenuItem = null;
     }
 
     function loadMenuItems() {
         BX.ajax.runComponentAction('otus:deal.order.items', 'getMenuItems', {
             mode: 'class',
             data: {
-                dealId: dealOrderItems.dealId
+                dealId,
             }
         }).then(function(response) {
             var select = BX('menu-item-select');
-            select.innerHTML = '<option value=""><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_SELECT_MENU_ITEM'))?></option>';
+            select.innerHTML = '<option value=""><?=Loc::getMessage('DEAL_ORDER_ITEMS_SELECT_MENU_ITEM')?></option>';
+            
+            menuItems = response.data;
             
             response.data.forEach(function(item) {
-                var option = new Option(item.TITLE, item.ID);
+                var option = new Option(item.name, item.id);
                 select.appendChild(option);
             });
         });
     }
     
     function onMenuItemChange(menuItemId) {
+    	selectedAdditives = [];
+    	selectedMenuItem = null;
+    	
         if (!menuItemId) {
             BX('additives-container').innerHTML = '';
             return;
         }
 
-        BX('additives-container').innerHTML = '<div class="additives-loading"><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_LOADING'))?></div>';
+        BX('additives-container').innerHTML = '<div class="additives-loading"></div>';
         
-        BX.ajax.runComponentAction('otus:deal.order.items', 'getAdditivesByMenuItem', {
-        	mode: 'class',
-            data: {
-                menuItemId: menuItemId
-            }
-        }).then(function(response) {
-            var container = BX('additives-container');
-            container.innerHTML = '';
+        var container = BX('additives-container');
+        container.innerHTML = '';
+        
+    	var menuItemId = BX('menu-item-select').value;
+    	selectedMenuItem = menuItems.find(el => el.id == menuItemId);
+    	currentMenuItemAdditives = selectedMenuItem?.additives;
+    	
+        currentMenuItemAdditives.forEach(function(additive) {
+            var wrapper = BX.create('label', {
+                props: {className: 'additive-checkbox-wrapper'},
+                children: [
+                    BX.create('input', {
+                        props: {
+                            type: 'checkbox',
+                            value: additive.id,
+                            className: 'additive-checkbox',
+                        }
+                    }),
+                    BX.create('span', {
+                        props: {className: 'ui-ctl-label-text'},
+                        text: additive.name + ' (+' + additive.price + ' ₽)'
+                    })
+                ]
+            });
+            
+            wrapper.addEventListener("change", () => {
+        		if (!selectedAdditives.some(el => el.id == additive.id)) {
+        			selectedAdditives.push(additive);
+        		} else {
+        			selectedAdditives = selectedAdditives.filter(el => el.id !== additive.id);
+        		}
+            });
 
-            if (response.status === 'success' && response.data.length > 0) {
-                response.data.forEach(function(additive) {
-                    var wrapper = BX.create('div', {
-                        props: {className: 'ui-ctl ui-ctl-checkbox additive-checkbox-wrapper'},
-                        children: [
-                            BX.create('input', {
-                                props: {
-                                    type: 'checkbox',
-                                    value: additive.ID,
-                                    className: 'ui-ctl-element additive-checkbox'
-                                }
-                            }),
-                            BX.create('div', {
-                                props: {className: 'ui-ctl-label-text'},
-                                text: additive.TITLE + ' (+' + additive.PRICE + ' ₽)'
-                            })
-                        ]
-                    });
-
-                    container.appendChild(wrapper);
-                });
-            } else {
-                container.innerHTML = '<div class="no-additives"><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_NO_ADDITIVES'))?></div>';
-            }
+            container.appendChild(wrapper);
         });
     }
 
     function addOrderItem() {
-        var menuItemId = BX('menu-item-select').value;
+        var menuItemId = selectedMenuItem?.id;
         var quantity = parseInt(BX('item-quantity').value);
-        var customPrice = BX('custom-price').value;
-        
-        // Собираем выбранные добавки
-        var additiveCheckboxes = BX.findChildren(BX('additives-container'), {className: 'additive-checkbox'}, true);
-        var additives = [];
-        additiveCheckboxes.forEach(function(checkbox) {
-            if (checkbox.checked) {
-                additives.push(checkbox.value);
-            }
-        });
+        var price = selectedMenuItem?.price;
 
         if (!menuItemId) {
-            showNotification('<?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_SELECT_MENU_ITEM_ERROR'))?>', 'error');
+            showNotification('<?=Loc::getMessage('DEAL_ORDER_ITEMS_SELECT_MENU_ITEM_ERROR')?>', 'error');
             return;
         }
 
         if (!quantity || quantity < 1) {
-            showNotification('<?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_QUANTITY_ERROR'))?>', 'error');
+            showNotification('<?=Loc::getMessage('DEAL_ORDER_ITEMS_QUANTITY_ERROR')?>', 'error');
             return;
         }
 
         // Блокируем кнопку на время выполнения
         var addButton = BX('add-item-btn');
         addButton.disabled = true;
-        addButton.textContent = '<?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_ADDING'))?>';
-
+        addButton.textContent = '<?=Loc::getMessage('DEAL_ORDER_ITEMS_ADDING')?>';
+        
         BX.ajax.runComponentAction('otus:deal.order.items', 'addOrderItem', {
         	mode: 'class',
             data: {
-                dealId: dealOrderItems.dealId,
+                dealId,
                 menuItemId: menuItemId,
                 quantity: quantity,
-                customPrice: customPrice,
-                additives: additives
+                price: price,
+                additives: selectedAdditives?.length ? selectedAdditives : null,
             }
         }).then(function(response) {
             if (response.status === 'success') {
-                showNotification(response.data.message, 'success');
+                showNotification('Элемент успешно добавлен', 'success');
                 hideAddItemForm();
-                updateOrderItemsList(response.data.items);
+                updateOrderItemsList();
                 resetAddItemForm();
             } else {
                 showNotification(response.errors[0].message, 'error');
             }
             addButton.disabled = false;
-            addButton.textContent = '<?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_ADD_BUTTON'))?>';
+            addButton.textContent = '<?=Loc::getMessage('DEAL_ORDER_ITEMS_ADD_BUTTON')?>';
         }).catch(function(response) {
             showNotification(response.errors[0].message, 'error');
             addButton.disabled = false;
-            addButton.textContent = '<?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_ADD_BUTTON'))?>';
+            addButton.textContent = '<?=Loc::getMessage('DEAL_ORDER_ITEMS_ADD_BUTTON')?>';
         });
     }
 
     function deleteItem(itemId) {
-        if (!confirm('<?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_DELETE_CONFIRM'))?>')) {
+        if (!confirm('<?=Loc::getMessage('DEAL_ORDER_ITEMS_DELETE_CONFIRM')?>')) {
             return;
         }
 
         BX.ajax.runComponentAction('otus:deal.order.items', 'deleteOrderItem', {
         	mode: 'class',
             data: {
-                dealId: dealOrderItems.dealId,
+                dealId,
                 itemId: itemId
             }
         }).then(function(response) {
             if (response.status === 'success') {
-                showNotification(response.data.message, 'success');
-                updateOrderItemsList(response.data.items);
+                showNotification('Элемент успешно удален', 'success');
+                updateOrderItemsList();
             } else {
                 showNotification(response.errors[0].message, 'error');
             }
@@ -247,17 +243,17 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
     }
     
     
-    function updateOrderItemsList(items) {
+    function updateOrderItemsList() {
         // Обновляем список элементов через AJAX
         BX.ajax.runComponentAction('otus:deal.order.items', 'getOrderItems', {
         	mode: 'class',
             data: {
-                dealId: dealOrderItems.dealId
+                dealId,
             }
         }).then(function(response) {
             if (response.status === 'success') {
-                renderOrderItems(response.data.items ?? []);
-                updateOrderTotal(response.data.totalSum ?? 0);
+                renderOrderItems(response.data ?? []);
+                // updateOrderTotal(response.data.totalSum ?? 0);
             }
         });
     }
@@ -266,35 +262,34 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
         var container = BX('order-items-container');
         
         if (items.length === 0) {
-            container.innerHTML = '<div class="ui-alert ui-alert-primary"><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_NO_ITEMS'))?></div>';
+            container.innerHTML = '<div class="ui-alert ui-alert-primary"><?=Loc::getMessage('DEAL_ORDER_ITEMS_NO_ITEMS')?></div>';
             return;
         }
 
         var html = '<table class="ui-table">' +
             '<thead>' +
                 '<tr>' +
-                    '<th><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_ITEM'))?></th>' +
-                    '<th><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_PRICE'))?></th>' +
-                    '<th><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_QUANTITY'))?></th>' +
-                    '<th><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_ADDITIVES'))?></th>' +
-                    '<th><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_TOTAL'))?></th>' +
-                    (dealOrderItems.canEdit ? '<th><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_ACTIONS'))?></th>' : '') +
+                    '<th><?=Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_ITEM')?></th>' +
+                    '<th><?=Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_PRICE')?></th>' +
+                    '<th><?=Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_QUANTITY')?></th>' +
+                    '<th><?=Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_ADDITIVES')?></th>' +
+                    '<th><?=Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_TOTAL')?></th>' +
+                    (canEdit ? '<th><?=Loc::getMessage('DEAL_ORDER_ITEMS_COLUMN_ACTIONS')?></th>' : '') +
                 '</tr>' +
             '</thead>' +
             '<tbody>';
 
         items.forEach(function(item) {
             html += '<tr data-item-id="' + item.ID + '">' +
-                '<td>' + BX.util.htmlspecialchars(item.MENU_ITEM_TITLE) + '</td>' +
-                '<td>' + formatPrice(item.PRICE) + '</td>' +
-                '<td>' + item.QUANTITY + '</td>' +
-                '<td>' + renderAdditives(item.ADDITIVES) + '</td>' +
+                '<td>' + BX.util.htmlspecialchars(item.name) + '</td>' +
+                '<td>' + formatPrice(item.price) + '</td>' +
+                '<td>' + item.quantity + '</td>' +
+                '<td>' + renderAdditives(item.additives) + '</td>' +
                 '<td>' + formatPrice(item.ITEM_TOTAL) + '</td>';
 
-            if (dealOrderItems.canEdit) {
+            if (canEdit) {
                 html += '<td>' +
-                    '<button type="button" class="ui-btn ui-btn-light" onclick="editItem(' + item.ID + ')"><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_EDIT_BUTTON'))?></button>' +
-                    '<button type="button" class="ui-btn ui-btn-light-danger" onclick="deleteItem(' + item.ID + ')"><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_DELETE_BUTTON'))?></button>' +
+                    '<button type="button" class="ui-btn ui-btn-light-danger" onclick="deleteItem(' + item.id + ')"><?=Loc::getMessage('DEAL_ORDER_ITEMS_DELETE_BUTTON')?></button>' +
                 '</td>';
             }
 
@@ -311,17 +306,17 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
         }
 
         return additives.map(function(additive) {
-            return '<span class="additive-tag">' + BX.util.htmlspecialchars(additive.TITLE) + '</span>';
+            return '<span class="additive-tag">' + BX.util.htmlspecialchars(additive.name) + '</span>';
         }).join('');
     }
 
-    function updateOrderTotal(totalSum) {
-        var container = BX('order-total-container');
-        container.innerHTML = '<div class="ui-alert ui-alert-success">' +
-            '<strong><?=CUtil::JSEscape(Loc::getMessage('DEAL_ORDER_ITEMS_TOTAL_SUM'))?>:</strong> ' +
-            formatPrice(totalSum) +
-            '</div>';
-    }
+    // function updateOrderTotal(totalSum) {
+    //     var container = BX('order-total-container');
+    //     container.innerHTML = '<div class="ui-alert ui-alert-success">' +
+    //         '<strong><?=Loc::getMessage('DEAL_ORDER_ITEMS_TOTAL_SUM')?>:</strong> ' +
+    //         formatPrice(totalSum) +
+    //         '</div>';
+    // }
 
     function formatPrice(price) {
         return parseFloat(price).toFixed(2) + ' ₽';
@@ -333,10 +328,5 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
             autoHideDelay: 3000,
             type: type
         });
-    }
-    
-    function editItem(itemId) {
-        // Реализация редактирования элемента
-        showNotification('Функция редактирования в разработке', 'info');
     }
 </script>

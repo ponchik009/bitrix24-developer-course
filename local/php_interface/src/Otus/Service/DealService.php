@@ -37,7 +37,7 @@ class DealService extends BaseCRMService {
 			$this->checkDealItemsAvailability($fields['branch']['id'], $fields['items']);
 			
 			// добавление всех элементов меню + добавок из заказа
-			[$menuItemsToAdd, $additivesToAdd] = $this->prepareDealItemsToAdd($fields['items']);
+			$menuItemsToAdd = $this->prepareDealItemsToAdd($fields['items']);
 
 			// основные поля
 			$dealFields = [
@@ -60,11 +60,16 @@ class DealService extends BaseCRMService {
 				foreach ($menuItemsToAdd as $item) {
 					// TODO: что делать, если одна из записей не добавилась?
 					$menuItemAddResult = $this->dealItemService->addItemToDeal($dealId, $item);
+					
+					if (!empty($item['additives']) && $menuItemAddResult->isSuccess()) {
+						foreach ($item['additives'] as $item) {
+							// TODO: что делать, если одна из записей не добавилась?
+							$additiveAddResult = $this->dealItemAdditiveService->addAdditiveToItem($menuItemAddResult->getId(), $item);
+						}
+					}
+					
 				}
-				foreach ($additivesToAdd as $key => $item) {
-					// TODO: что делать, если одна из записей не добавилась?
-					$additiveAddResult = $this->dealItemAdditiveService->addAdditiveToItem($key, $item);
-				}
+
 				
 				return $result;
 			} else {
@@ -134,11 +139,10 @@ class DealService extends BaseCRMService {
 			$menuItemsMap[$item['id']] = $item;
 		}
 		$menuItemsToAdd = [];
-		$additivesToAdd = [];
 		foreach ($items as $item) {
 			$menuItem = $menuItemsMap[$item['id']];
 			
-			$menuItemsToAdd[] = [
+			$itemToAdd = [
 				'id' => $item['id'],
 				'count' => $item['count'],
 				'price' => $menuItem['price']
@@ -151,13 +155,15 @@ class DealService extends BaseCRMService {
 					throw new \Exception("Добавку {$additive['id']} нельзя добавить к элементу меню {$item['id']}");
 				}
 				
-				$additivesToAdd[$item['id']] = [
+				$itemToAdd['additives'][] = [
 					'price' => $menuItem['additivesMap'][$additive['id']]['price'],
 					'id' => $additive['id']
 				];
 			}
+			
+			$menuItemsToAdd[] = $itemToAdd;
 		}
 		
-		return [$menuItemsToAdd, $additivesToAdd];
+		return $menuItemsToAdd;
 	}
 }
