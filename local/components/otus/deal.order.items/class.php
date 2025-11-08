@@ -15,34 +15,6 @@ use Otus\Service\DealItemAdditiveService;
 
 class DealOrderItemsComponent extends CBitrixComponent implements \Bitrix\Main\Engine\Contract\Controllerable
 {
-    private $orderItems = [
-
-	];
-    private $menu = [
-    	[
-    		'ID' => 1,
-    		'PRICE' => 100,
-    		'TITLE' => 'Test menu 1'
-		],
-    	[
-    		'ID' => 2,
-    		'PRICE' => 120,
-    		'TITLE' => 'Test menu 2'
-		]
-    ];
-    private $additives = [
-    	[
-    		'ID' => 1,
-    		'TITLE' => 'Test additive 1',
-    		'PRICE' => 20,
-		],
-    	[
-    		'ID' => 2,
-    		'TITLE' => 'Test additive 2',
-    		'PRICE' => 10,
-		],
-    ];
-    
     private $menuService;
     private $menuAvailabilityService;
     private $branchService;
@@ -117,30 +89,16 @@ class DealOrderItemsComponent extends CBitrixComponent implements \Bitrix\Main\E
         }
     }
 
-    private function calculateItemTotal($item, $menuItem, $additives)
-    {
-        $price = $item['UF_PRICE'] ?: $menuItem['PRICE'];
-        $quantity = $item['UF_QUANTITY'] ?: 1;
-        
-        $additivesTotal = 0;
-        foreach ($additives as $additive) {
-            $additivesTotal += $additive['PRICE'];
-        }
 
-        return ($price + $additivesTotal) * $quantity;
-    }
-
-    private function calculateTotalSum()
-    {
-        $total = 0;
-        foreach ($this->arResult['ITEMS'] as $item) {
-            $total += $item['ITEM_TOTAL'];
-        }
-        return $total;
-    }
     
     public function getOrderItemsAction($dealId) {
-    	return $this->dealItemService->getDealItems($dealId);
+    	$items = $this->dealItemService->getDealItems($dealId);
+    	$totalSum = $this->dealItemService->calculateTotalSum($items);
+    	
+    	return [
+    		'items' => $items,
+    		'totalSum' => $totalSum,
+    	];
     }
     
     public function getMenuItemsAction()
@@ -165,7 +123,7 @@ class DealOrderItemsComponent extends CBitrixComponent implements \Bitrix\Main\E
         return $result;
     }
 
-    public function addOrderItemAction($menuItemId, $quantity, $additives = [], $price, $dealId)
+    public function addOrderItemAction($menuItemId, $quantity, $price, $dealId, $additives = [])
     {
     	$fields = [
     		'id' => $menuItemId,

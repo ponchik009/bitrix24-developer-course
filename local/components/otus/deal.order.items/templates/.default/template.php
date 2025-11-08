@@ -32,7 +32,7 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
             <div class="ui-form-row">
                 <label class="ui-form-label"><?=Loc::getMessage('DEAL_ORDER_ITEMS_QUANTITY')?></label>
                 <div class="ui-form-content">
-                    <input type="number" id="item-quantity" class="ui-ctl-element" value="1" min="1">
+                    <input type="number" id="item-quantity" class="ui-ctl-element" value="1" min="1" oninput="onQuantityChange(this.value)">
                 </div>
             </div>
 
@@ -44,6 +44,11 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
                     </div>
                 </div>
             </div>
+            
+            <!-- стоимость элемента в заказе -->
+            <div id="item-total-container">
+
+		    </div>
 
             <div class="ui-form-buttons">
                 <button type="button" class="ui-btn ui-btn-primary" onclick="addOrderItem()" id="add-item-btn">
@@ -62,11 +67,8 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
     </div>
 
     <!-- Итоговая сумма -->
-    <div class="order-total">
-        <div class="ui-alert ui-alert-success">
-            <strong><?=Loc::getMessage('DEAL_ORDER_ITEMS_TOTAL_SUM')?>: </strong>
-             <?=number_format(0, 2)?> ₽
-        </div>
+    <div id="order-total-container">
+
     </div>
 </div>
 
@@ -76,6 +78,10 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
 	
 	let selectedMenuItem = null;
 	let selectedAdditives = [];
+	let currentPrice = 0;
+	let currentQuantity = 1;
+	
+	const NUMBER_FORMATTER = new Intl.NumberFormat('ru', { style: "decimal", minimumFractionDigits: 2 });
 	
 	const dealId = <?=CUtil::PhpToJSObject($arParams['DEAL_ID'])?>;
 	const canEdit = <?=CUtil::PhpToJSObject($arParams['CAN_EDIT'])?>;
@@ -102,9 +108,13 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
         BX('item-quantity').value = '1';
         BX('additives-container').innerHTML = '';
         BX('add-item-btn').disabled = false;
-        
+    }
+    
+    function resetAddItemVariables() {
         selectedAdditives = [];
         selectedMenuItem = null;
+        currentPrice = 0;
+        currentQuantity = 1;
     }
 
     function loadMenuItems() {
@@ -126,9 +136,15 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
         });
     }
     
+    function onQuantityChange(quantity) {
+    	currentQuantity = +quantity;
+    	
+    	currentPrice = calculateItemTotal(selectedMenuItem, selectedAdditives, currentQuantity);
+    	updateItemTotal(currentPrice);
+    }
+    
     function onMenuItemChange(menuItemId) {
-    	selectedAdditives = [];
-    	selectedMenuItem = null;
+    	resetAddItemVariables();
     	
         if (!menuItemId) {
             BX('additives-container').innerHTML = '';
@@ -143,6 +159,8 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
     	var menuItemId = BX('menu-item-select').value;
     	selectedMenuItem = menuItems.find(el => el.id == menuItemId);
     	currentMenuItemAdditives = selectedMenuItem?.additives;
+    	currentPrice = calculateItemTotal(selectedMenuItem, selectedAdditives, currentQuantity);
+    	updateItemTotal(currentPrice);
     	
         currentMenuItemAdditives.forEach(function(additive) {
             var wrapper = BX.create('label', {
@@ -168,6 +186,9 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
         		} else {
         			selectedAdditives = selectedAdditives.filter(el => el.id !== additive.id);
         		}
+        		
+        		currentPrice = calculateItemTotal(selectedMenuItem, selectedAdditives, currentQuantity);
+        		updateItemTotal(currentPrice);
             });
 
             container.appendChild(wrapper);
@@ -209,6 +230,7 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
                 hideAddItemForm();
                 updateOrderItemsList();
                 resetAddItemForm();
+                resetAddItemVariables();
             } else {
                 showNotification(response.errors[0].message, 'error');
             }
@@ -252,8 +274,8 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
             }
         }).then(function(response) {
             if (response.status === 'success') {
-                renderOrderItems(response.data ?? []);
-                // updateOrderTotal(response.data.totalSum ?? 0);
+                renderOrderItems(response.data.items ?? []);
+                updateOrderTotal(response.data.totalSum ?? 0);
             }
         });
     }
@@ -285,7 +307,7 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
                 '<td>' + formatPrice(item.price) + '</td>' +
                 '<td>' + item.quantity + '</td>' +
                 '<td>' + renderAdditives(item.additives) + '</td>' +
-                '<td>' + formatPrice(item.ITEM_TOTAL) + '</td>';
+                '<td>' + formatPrice(calculateItemTotal(item, item.additives, item.quantity)) + '</td>';
 
             if (canEdit) {
                 html += '<td>' +
@@ -309,17 +331,29 @@ Extension::load(['ui.buttons', 'ui.forms', 'ui.alerts', 'ajax']);
             return '<span class="additive-tag">' + BX.util.htmlspecialchars(additive.name) + '</span>';
         }).join('');
     }
+    
+    function calculateItemTotal(item, additives, quantity = 1) {
+    	return ((+item.price) + additives.reduce((acc, cur) => acc + (+cur.price), 0)) * quantity;
+    }
+    
+    function updateItemTotal(totalSum) {
+        var container = BX('item-total-container');
+        container.innerHTML = '<div class="ui-alert ui-alert-success">' +
+            '<strong><?= Loc::getMessage('DEAL_ORDER_ITEMS_TOTAL_SUM') ?>:</strong> ' +
+            '<span>' + formatPrice(totalSum) + '</span>' +
+            '</div>';
+    }
 
-    // function updateOrderTotal(totalSum) {
-    //     var container = BX('order-total-container');
-    //     container.innerHTML = '<div class="ui-alert ui-alert-success">' +
-    //         '<strong><?=Loc::getMessage('DEAL_ORDER_ITEMS_TOTAL_SUM')?>:</strong> ' +
-    //         formatPrice(totalSum) +
-    //         '</div>';
-    // }
+    function updateOrderTotal(totalSum) {
+        var container = BX('order-total-container');
+        container.innerHTML = '<div class="ui-alert ui-alert-success">' +
+            '<strong><?= Loc::getMessage('DEAL_ORDER_ITEMS_TOTAL_SUM') ?>:</strong> ' +
+            '<span>' + formatPrice(totalSum) + '</span>' +
+            '</div>';
+    }
 
     function formatPrice(price) {
-        return parseFloat(price).toFixed(2) + ' ₽';
+        return NUMBER_FORMATTER.format(parseFloat(price)) + ' ₽';
     }
 
     function showNotification(message, type) {

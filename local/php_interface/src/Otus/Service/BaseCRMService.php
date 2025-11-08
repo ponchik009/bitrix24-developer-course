@@ -2,11 +2,12 @@
 
 namespace Otus\Service;
 
-use Bitrix\Main\UserFieldTable;
+use Otus\Helper\UserFieldHelper;
 
 abstract class BaseCRMService {
 	public $factory;
 	public $fields;
+	public $enums;
 	
 	/**
 	 * Базовый конструктор с получением фабрики по XML_ID и кастомных полей
@@ -16,8 +17,15 @@ abstract class BaseCRMService {
 		
 		$entityTypeId = $this->factory->getEntityTypeId();
 		
-		$this->fields = \Otus\Helper\UserFieldHelper::getUserFieldsByCode(
+		$this->fields = UserFieldHelper::getUserFieldsByCode(
 			$entityTypeId > 128 ? "CRM_{$this->factory->getType()->getId()}" : $code
 		);
+		
+		$this->enums = [];
+		foreach ($this->fields as $xmlId => $field) {
+			if ($field['TYPE'] == 'enumeration') {
+				$this->enums[$xmlId] = UserFieldHelper::getUserFieldEnums($field['ID']);
+			}
+		}
 	}
 }

@@ -25,6 +25,28 @@ class DealService extends BaseCRMService {
 		$this->dealItemAdditiveService = new DealItemAdditiveService();
 	}
 	
+	public function getDealsByContactId($contactId) {
+		$items = $this->factory->getItems([
+			'filter' => [
+				$this->fields['DEAL_CLIENT']['NAME'] => $contactId,
+			],
+			'select' => [
+				'ID',
+				'TITLE',
+				'DATE_CREATE',
+				$this->fields['DEAL_TOTAL_PRICE']['NAME'],
+			],
+			'order' => [
+				'ID' => 'DESC'
+			]
+		]);
+		
+		return array_map(
+			fn($item) => $this->mapItem($item),
+			$items
+		);
+	}
+	
 	public function add($fields) {
 		try {
 			// определение клиента, сделавшего заказ
@@ -165,5 +187,14 @@ class DealService extends BaseCRMService {
 		}
 		
 		return $menuItemsToAdd;
+	}
+	
+	private function mapItem($item) {
+		return [
+			'id' => $item->getId(),
+			'name' => $item->getTitle(),
+			'total_price' => \Otus\Helper\MoneyFieldHelper::getMoneyNumber($item->get($this->fields['DEAL_TOTAL_PRICE']['NAME'])),
+			'date' => $item->getDateCreate()->format("d.m.Y")
+		];
 	}
 }

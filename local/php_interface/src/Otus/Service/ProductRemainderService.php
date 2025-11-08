@@ -3,29 +3,19 @@
 namespace Otus\Service;
 
 class ProductRemainderService extends BaseCRMService {
-	protected $branchService;
+	protected $productService;
 	
 	public function __construct() {
 		parent::__construct('SP_PRODUCTS_REMAINDER');
 		
-		$this->branchService = new BranchService();
+		$this->productService = new ProductService();
 	}
 	
 	/**
-	 * Изменяет баланс продукта по ID текущего пользователя
+	 * Уменьшает баланс продукта по ID филиала и продукта
  	*/
 	public function reduceProductBalance($fields) {
-		$currentAmount = $this->factory->getItems([
-			'limit' => 1,
-			'select' => [
-				'ID',
-				$this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME'],
-			],
-			'filter' => [
-				$this->fields['SP_PRODUCTS_REMAINDER_BRANCH']['NAME'] => $fields['branchId'],
-				$this->fields['SP_PRODUCTS_REMAINDER_PRODUCT']['NAME'] => $fields['productId'],
-			]
-		])[0];
+		$currentAmount = $this->getProductAmount($fields['branchId'], $fields['productId']);
 		
 		if (
 			$currentAmount 
@@ -42,5 +32,91 @@ class ProductRemainderService extends BaseCRMService {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Изменяет баланс продукта по ID филиала и продукта
+ 	*/
+ 	public function changeProductBalance($fields) {
+		$currentAmount = $this->getProductAmount($fields['branchId'], $fields['productId']);
+		
+		if (
+			$currentAmount
+		) {
+			$currentAmount->set(
+				$this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME'],
+				$fields['amount']
+			);
+			$operation = $this->factory->getUpdateOperation($currentAmount);
+			$result = $operation->launch();
+			
+			return $result->isSuccess();
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Получает все остатки по филиалу (с информацией о продукте)
+ 	*/
+ 	public function getRemainders($branchId) {
+ 		$items = $this->factory->getItems([
+ 			'select' => [
+ 				'ID',
+ 				$this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME'],
+ 				$this->fields['SP_PRODUCTS_REMAINDER_PRODUCT']['NAME'],
+ 				'PRODUCT',
+ 			],
+ 			'filter' => [
+ 				$this->fields['SP_PRODUCTS_REMAINDER_BRANCH']['NAME'] => $branchId,
+ 			],
+ 			'runtime' => [
+				'PRODUCT' => [
+	        		'data_type' => $this->productService->factory->getDataClass(),
+			        'reference' => [
+			            "=this.{$this->fields['SP_PRODUCTS_REMAINDER_PRODUCT']['NAME']}" => 'ref.ID'
+			        ],
+			        'join_type' => 'left'
+			    ]
+		    ]
+ 		]);
+ 		
+ 		return array_map(
+ 			fn($item) => $this->mapItem($item),
+ 			$items
+ 		);
+ 	}
+	
+	/**
+	 * Получает текущий баланс продукта по филиалу
+ 	*/
+	public function getProductAmount($branchId, $productId) {
+		$amountItem = $this->factory->getItems([
+			'limit' => 1,
+			'select' => [
+				'ID',
+				$this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME'],
+			],
+			'filter' => [
+				$this->fields['SP_PRODUCTS_REMAINDER_BRANCH']['NAME'] => $branchId,
+				$this->fields['SP_PRODUCTS_REMAINDER_PRODUCT']['NAME'] => $productId,
+			]
+		])[0];
+		
+		return $amountItem;
+	}
+	
+	private function mapItem($item) {
+		return [
+			'id' => $item->getId(),
+			'product' => [
+				'name' => $item->get('PRODUCT')->getTitle(),
+				'id' => $item->get('PRODUCT')->getId(),
+				'measurmentUnit' => $this->productService->enums['SP_PRODUCT_MEASUREMENT_UNIT'][
+					$item->get('PRODUCT')->get($this->productService->fields['SP_PRODUCT_MEASUREMENT_UNIT']['NAME'])
+				]['VALUE']
+			],
+			'remainder' => $item->get($this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME']),
+		];
 	}
 }

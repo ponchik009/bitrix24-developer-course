@@ -72,6 +72,27 @@ class DealItemService extends BaseCRMService {
 		return $result;
 	}
 	
+    public function calculateItemTotal($item)
+    {
+        $price = $item['price'];
+        
+        $additivesTotal = 0;
+        foreach (($item['additives'] ?? []) as $additive) {
+            $additivesTotal += $additive['price'];
+        }
+
+        return ($price + $additivesTotal) * $item['quantity'];
+    }
+
+    public function calculateTotalSum($items)
+    {
+        $total = 0;
+        foreach ($items as $item) {
+            $total += $this->calculateItemTotal($item);
+        }
+        return $total;
+    }
+	
 	private function mapItem($item) {
 		return [
 			'id' => $item->getId(),

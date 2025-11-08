@@ -9,8 +9,12 @@ $eventManager = EventManager::getInstance();
 // Rest методы для работы с заказами
 $eventManager->addEventHandlerCompatible('rest', 'OnRestServiceBuildDescription', ['Otus\Event\RestEventsRegister', 'OnRestServiceBuildDescriptionHandler']);
 
+// подключение JS расширений
+$eventManager->addEventHandler('main', 'OnProlog', ['Otus\Event\JsExtensionsRegister', 'registerExtensions']);
+
 // TODO: переписать в нормальный вид, отвязаться от идентификатора типа
-$eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemAdd_1072', function(&$item) {
+// TODO: вынести определение функции в отдельный класс
+$eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemAdd_1072', function($item) {
 	$productRemovingService = new \Otus\Service\ProductRemovingService();
 	$productRemainderService = new \Otus\Service\ProductRemainderService();
 	$branchService = new \Otus\Service\BranchService();
@@ -36,10 +40,46 @@ $eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemAdd_1072', func
 	return true;
 });
 
+$eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemAdd_1052', function($item) {
+	return onDealItemsChange($item);
+});
+
+$eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemDelete_1052', function($item) {
+	return onDealItemsChange($item);
+});
+
+// TODO: вынести определение функции в отдельный класс
+function onDealItemsChange($item) {
+	$dealService = new \Otus\Service\DealService();
+	$dealItemService = new \Otus\Service\DealItemService();
+	$dealId = $item->get($dealItemService->fields['SP_DEAL_ITEMS_DEAL']['NAME']);
+
+	$dealItems = $dealItemService->getDealItems($dealId);
+	
+	$totalSum = $dealItemService->calculateTotalSum($dealItems);
+	
+	$deal = $dealService->factory->getItem($dealId);
+	$deal->set(
+		$dealService->fields['DEAL_TOTAL_PRICE']['NAME'],
+		"$totalSum|RUB"
+	);
+	$dealUpdateOperation = $dealService->factory->getUpdateOperation($deal);
+	$dealUpdateResult = $dealUpdateOperation->launch();
+	
+	return $dealUpdateResult->isSuccess();
+}
+
+// TODO: вынести определение функции в отдельный класс
 $eventManager->addEventHandler('crm', 'onEntityDetailsTabsInitialized', function(Event $event) {
     $entityId = $event->getParameter('entityID');
     $entityTypeID = $event->getParameter('entityTypeID');
     $tabs = $event->getParameter('tabs');
+    
+    $reflection = new \ReflectionClass($event);
+    $property = $reflection->getProperty('parameters');
+    $property->setAccessible(true);
+  
+    $eventParameters = $property->getValue($event);
 
 	if ($entityTypeID == \CCrmOwnerType::Deal) {
         $tabs[] = [
@@ -59,9 +99,49 @@ $eventManager->addEventHandler('crm', 'onEntityDetailsTabsInitialized', function
             ]
         ];
 	}
+	
+    $eventParameters['tabs'] = $tabs;
+    $property->setValue($event, $eventParameters);
 
     return new EventResult(EventResult::SUCCESS, [
         'tabs' => $tabs,
     ]);
 });
 
+// TODO: вынести определение функции в отдельный класс
+$eventManager->addEventHandler('crm', 'onEntityDetailsTabsInitialized', function(Event $event) {
+    $entityId = $event->getParameter('entityID');
+    $entityTypeID = $event->getParameter('entityTypeID');
+    $tabs = $event->getParameter('tabs');
+    
+    $reflection = new \ReflectionClass($event);
+    $property = $reflection->getProperty('parameters');
+    $property->setAccessible(true);
+  
+    $eventParameters = $property->getValue($event);
+    
+	if ($entityTypeID == \CCrmOwnerType::Contact) {
+        $tabs[] = [
+            'id' => 'contact_orders',
+            'name' => 'Заказы',
+            'enabled' => !empty($entityId),
+            'loader' => [
+                'serviceUrl' => '/local/components/otus/contact.orders.list/lazyload.ajax.php?&site=' . \SITE_ID . '&' . \bitrix_sessid_get(),
+                'componentData' => [
+                    'template' => '',
+                    'params' => [
+                        // Параметры вызываемого компонента ($arParams)
+                        'CONTACT_ID' => $entityId,
+                    ]
+                ]
+            ]
+        ];
+	}
+	
+    $eventParameters['tabs'] = $tabs;
+    $property->setValue($event, $eventParameters);
+
+    return new EventResult(EventResult::SUCCESS, [
+        'tabs' => $tabs,
+    ]);
+});

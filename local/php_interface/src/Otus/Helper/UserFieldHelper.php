@@ -2,6 +2,8 @@
 
 namespace Otus\Helper;
 
+use Bitrix\Main\UserFieldTable;
+
 class UserFieldHelper {
 	/**
 	 * Получает пользовательские поля по коду сущности
@@ -11,7 +13,7 @@ class UserFieldHelper {
 	public static function getUserFieldsByCode($code) {
 		$result = [];
 		
-		$entityFields = \Bitrix\Main\UserFieldTable::getList([
+		$entityFields = UserFieldTable::getList([
 			'filter' => [
 				'ENTITY_ID' => $code,
 			]
@@ -31,4 +33,29 @@ class UserFieldHelper {
 		
 		return $result;
 	}
+	
+	/**
+	 * Получает значения для полей-енамов
+	 * Ключами массива ответа являются ID элементов списка
+ 	*/
+ 	public static function getUserFieldEnums($fieldId) {
+ 		$dbRes = \CUserFieldEnum::GetList(
+ 			['ID' => 'DESC'],
+ 			[
+ 				'USER_FIELD_ID' => $fieldId,
+ 			]
+ 		);
+ 		
+ 		$result = [];
+ 		
+ 		while ($item = $dbRes->fetch()) {
+ 			$result[$item['ID']] = [
+ 				'ID' => $item['ID'],
+ 				'VALUE' => $item['VALUE'],
+ 				'XML_ID' => $item['XML_ID'],
+ 			];
+ 		}
+ 		
+ 		return $result;
+ 	}
 }
