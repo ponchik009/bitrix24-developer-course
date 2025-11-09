@@ -49,12 +49,19 @@ class BranchService extends BaseCRMService {
 	}
 	
 	public function getOperatorsList($branchId) {
+		return $this->getUsersListByBranchAndRole($branchId, 18);
+	}
+	
+	public function getChiefsList($branchId) {
+		return $this->getUsersListByBranchAndRole($branchId, 20);
+	}
+	
+	private function getUsersListByBranchAndRole($branchId, $roleId) {
 		$result = \Bitrix\Main\UserTable::getList([
 			'select' => ['ID'],
 			'filter' => [
 				'UF_DEPARTMENT' => $branchId,
-				// группа оператора
-				'=GROUPS.GROUP_ID' => 18,
+				'=GROUPS.GROUP_ID' => $roleId,
 			],
 		    'runtime' => [
 		        new \Bitrix\Main\Entity\ReferenceField(

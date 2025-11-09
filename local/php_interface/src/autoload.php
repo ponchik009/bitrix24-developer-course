@@ -17,3 +17,5 @@ spl_autoload_register(function (string $class): void {
         require_once $path;
     }
 });
+
+require_once __DIR__ . '/Otus/Agent/include_agents.php';
