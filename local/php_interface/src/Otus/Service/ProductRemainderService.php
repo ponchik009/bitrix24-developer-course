@@ -13,18 +13,27 @@ class ProductRemainderService extends BaseCRMService {
 	
 	/**
 	 * Уменьшает баланс продукта по ID филиала и продукта
+	 * 
+	 * @param $minBalance - если задан, то при списании большего количества, чем имеется на складе, баланс продуктов будет опущен до $minBalance
  	*/
-	public function reduceProductBalance($fields) {
+	public function reduceProductBalance($fields, $minBalance = null) {
 		$currentAmount = $this->getProductAmount($fields['branchId'], $fields['productId']);
 		
 		if (
 			$currentAmount 
-			&& $currentAmount->get($this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME']) >= $fields['amount']
 		) {
-			$currentAmount->set(
-				$this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME'],
-				$currentAmount->get($this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME']) - $fields['amount']
-			);
+			if ($currentAmount->get($this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME']) >= $fields['amount']) {
+				$currentAmount->set(
+					$this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME'],
+					$currentAmount->get($this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME']) - $fields['amount']
+				);
+			} else if (is_numeric($minBalance)) {
+				$currentAmount->set(
+					$this->fields['SP_PRODUCTS_REMAINDER_AMOUNT']['NAME'],
+					$minBalance
+				);
+			}
+			
 			$operation = $this->factory->getUpdateOperation($currentAmount);
 			$result = $operation->launch();
 			

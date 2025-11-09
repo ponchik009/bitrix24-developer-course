@@ -98,6 +98,9 @@ class DealItemService extends BaseCRMService {
 			'id' => $item->getId(),
 			'price' => \Otus\Helper\MoneyFieldHelper::getMoneyNumber($item->get($this->fields['SP_DEAL_ITEMS_PRICE']['NAME'])),
 			'name' => $item->get('MENU_ITEM')->getTitle(),
+			'menuItem' => [
+				'id' => $item->get('MENU_ITEM')->getId(),			
+			],
 			'quantity' => $item->get($this->fields['SP_DEAL_ITEMS_COUNT']['NAME']),
 			
 		];

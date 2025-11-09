@@ -12,6 +12,52 @@ $eventManager->addEventHandlerCompatible('rest', 'OnRestServiceBuildDescription'
 // подключение JS расширений
 $eventManager->addEventHandler('main', 'OnProlog', ['Otus\Event\JsExtensionsRegister', 'registerExtensions']);
 
+// TODO: вынести определение функции в отдельный класс
+$eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function($arFields) {
+	// статус "Готов"
+	if ($arFields["STAGE_ID"] == "C1:FINAL_INVOICE") {
+		$dealItemService = new \Otus\Service\DealItemService();
+		$dealItemAdditiveService = new \Otus\Service\DealItemAdditiveService();
+		$menuConsumptionService = new \Otus\Service\MenuConsumptionService();
+		$productRemainderService = new \Otus\Service\ProductRemainderService();
+		$branchService = new \Otus\Service\BranchService();
+		
+		$removing = [];
+		
+		$dealItems = $dealItemService->getDealItems($arFields['ID']) ?? [];
+		$currentUserBranch = $branchService->getCurrentUserBranch();
+		
+		foreach ($dealItems as $item) {
+			$additives = $dealItemAdditiveService->getAdditivesByItemId($item['id']) ?? [];
+			
+			foreach ($additives as $additive) {
+				$removing[] = [
+					'branchId' => $currentUserBranch['id'],
+					'productId' => $additive['product']['id'],
+					'amount' => $additive['additive']['consumption']
+				];
+			}
+			
+			$menuItemId = $item['menuItem']['id'];
+			$consumptions = $menuConsumptionService->getMenuItemConsumption($menuItemId);
+			
+			foreach ($consumptions as $consumtion) {
+				$removing[] = [
+					'branchId' => $currentUserBranch['id'],
+					'productId' => $consumtion['product']['id'],
+					'amount' => $consumtion['consumption']
+				];
+			}
+		}
+		
+		foreach ($removing as $removingItem) {
+			$productRemainderService->reduceProductBalance($removingItem, 0);
+		}
+	}
+	
+	return true;
+});
+
 // TODO: переписать в нормальный вид, отвязаться от идентификатора типа
 // TODO: вынести определение функции в отдельный класс
 $eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemAdd_1072', function($item) {

@@ -65,6 +65,8 @@ class DealService extends BaseCRMService {
 			$dealFields = [
 				'ASSIGNED_BY_ID' => $dealOperator['ID'] ?? 1,
 				
+				'CATEGORY_ID' => 1,
+				
 				$this->fields['DEAL_ADDRES']['NAME'] => $fields['address']['text'],
 				$this->fields['DEAL_PICKUP']['NAME'] => $fields['pickup'],
 				$this->fields['DEAL_DELIVERY_DATETIME']['NAME'] => new DateTime($fields['receiptDatetime'], "Y-m-d H:i:s"),

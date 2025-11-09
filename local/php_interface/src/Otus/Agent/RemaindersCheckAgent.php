@@ -12,52 +12,60 @@ class RemaindersCheckAgent implements \Otus\Interface\Runnable {
 	const TAG_NAME = 'Заказ продуктов';
 	
 	public static function run() {
-		Loader::includeModule('tasks');
-		
-		$branchService = new \Otus\Service\BranchService();
-		$criticalRemainderService = new \Otus\Service\CriticalRemainderService();
-		$productRemainderService = new \Otus\Service\ProductRemainderService();
-		
-		$branches = $branchService->getAll();
-		foreach ($branches as $branch) {
-			$currentRemainders = $productRemainderService->getRemainders($branch['id']);
-			$criticalRemainders = $criticalRemainderService->getCriticalRemaindersByBranch($branch['id']);
+		try {
+			Loader::includeModule('tasks');
 			
-			$criticalRemaindersMap = [];
-			foreach ($criticalRemainders as $remainder) {
-				$criticalRemaindersMap[$remainder['productId']] = $remainder;
-			}
+			$branchService = new \Otus\Service\BranchService();
+			$criticalRemainderService = new \Otus\Service\CriticalRemainderService();
+			$productRemainderService = new \Otus\Service\ProductRemainderService();
 			
-			// список заканчивающихся продуктов
-			$notifyList = [];
-			
-			foreach ($currentRemainders as $remainder) {
-				if (
-					!empty($criticalRemaindersMap[$remainder['product']['id']])
-					&& $remainder['remainder'] <= $criticalRemaindersMap[$remainder['product']['id']]['balance']
-				) {
-					// текущий остаток меньше либо равен критическому
-					$notifyList[] = "{$remainder['product']['name']} - осталось {$remainder['remainder']} {$remainder['product']['measurmentUnit']}";
+			$branches = $branchService->getAll();
+			foreach ($branches as $branch) {
+				$currentRemainders = $productRemainderService->getRemainders($branch['id']);
+				$criticalRemainders = $criticalRemainderService->getCriticalRemaindersByBranch($branch['id']);
+				
+				$criticalRemaindersMap = [];
+				foreach ($criticalRemainders as $remainder) {
+					$criticalRemaindersMap[$remainder['productId']] = $remainder;
+				}
+				
+				// список заканчивающихся продуктов
+				$notifyList = [];
+				
+				foreach ($currentRemainders as $remainder) {
+					if (
+						!empty($criticalRemaindersMap[$remainder['product']['id']])
+						&& $remainder['remainder'] <= $criticalRemaindersMap[$remainder['product']['id']]['balance']
+					) {
+						// текущий остаток меньше либо равен критическому
+						$notifyList[] = "{$remainder['product']['name']} - осталось {$remainder['remainder']} {$remainder['product']['measurmentUnit']}";
+					}
+				}
+				
+				if (empty($notifyList)) {
+					return "\Otus\Agent\RemaindersCheckAgent::run();";
+				}
+				
+				// создание / обновление задачи
+				$chiefsList = $branchService->getChiefsList($branch['id']);
+				$firstCheif = $chiefsList[0];
+				$existingTask = self::getSimilarOpenTask($firstCheif['ID'], "Заказть продукты");
+				
+				if (empty($existingTask)) {
+					self::createTask($firstCheif['ID'], "Заказть продукты", implode("\n", $notifyList));
+				} else {
+					self::updateTask($existingTask['ID'], implode("\n", $notifyList));
 				}
 			}
-			
-			if (empty($notifyList)) {
-				return "\Otus\Agent\ReminadersCheckAgent::run();";
-			}
-			
-			// создание / обновление задачи
-			$chiefsList = $branchService->getChiefsList($branch['id']);
-			$firstCheif = $chiefsList[0];
-			$existingTask = self::getSimilarOpenTask($firstCheif['ID'], "Заказть продукты");
-			
-			if (empty($existingTask)) {
-				self::createTask($firstCheif['ID'], "Заказть продукты", implode("\n", $notifyList));
-			} else {
-				self::updateTask($existingTask['ID'], implode("\n", $notifyList));
-			}
+		} catch (\Throwable $ex) {
+			AddMessage2Log(
+				\Bitrix\Main\Web\Json::encode([
+					$ex->getMessage()
+				])
+			);
 		}
 		
-		return "\Otus\Agent\ReminadersCheckAgent::run();";
+		return "\Otus\Agent\RemaindersCheckAgent::run();";
 	}
 	
     /**

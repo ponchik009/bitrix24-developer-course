@@ -30,7 +30,8 @@ class DealItemAdditiveService extends BaseCRMService {
 				'ID',
 				$this->fields['SP_DEAL_ITEMS_ADDITIVES_PRICE']['NAME'],
 				$this->fields['SP_DEAL_ITEMS_ADDITIVES_ADDITIVE']['NAME'],
-				'ADDITIVE'
+				'ADDITIVE',
+				'PRODUCT',
 			],
 			'filter' => [
 				$this->fields['SP_DEAL_ITEMS_ADDITIVES_DEAL_ITEM']['NAME'] => $itemId
@@ -74,7 +75,14 @@ class DealItemAdditiveService extends BaseCRMService {
 		return [
 			'id' => $item->getId(),
 			'price' => \Otus\Helper\MoneyFieldHelper::getMoneyNumber($item->get($this->fields['SP_DEAL_ITEMS_ADDITIVES_PRICE']['NAME'])),
-			'name' => $item->get('ADDITIVE')->getTitle()
+			'name' => $item->get('ADDITIVE')->getTitle(),
+			'additive' => [
+				'id' => $item->get('ADDITIVE')->getId(),
+				'consumption' => $item->get('ADDITIVE')->get($this->additiveService->fields['SP_ADDITIVE_CONSUMPTION']['NAME']),
+			],
+			'product' => [
+				'id' => $item->get('PRODUCT')->getId(),
+			]
 		];
 	}
 }
