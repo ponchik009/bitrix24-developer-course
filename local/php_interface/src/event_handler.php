@@ -14,6 +14,48 @@ $eventManager->addEventHandler('main', 'OnProlog', ['Otus\Event\JsExtensionsRegi
 
 // TODO: вынести определение функции в отдельный класс
 $eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function($arFields) {
+	// статусы Готовится, Готов, В доставке, Доставлен
+	if (
+		in_array(
+			$arFields['STAGE_ID'], 
+			['C1:EXECUTING', 'C1:FINAL_INVOICE', 'C1:UC_S4HDT6', 'C1:WON']
+		)
+	) {
+		function resolveDealStage($stageId) {
+			if ($stageId == "C1:EXECUTING") {
+				return ["Готовится", "Ваш заказ готовится!"];
+			} else if ($stageId == "C1:FINAL_INVOICE") {
+				return ["Готов", "Ваш заказ готов!"];
+			} else if ($stageId == "C1:UC_S4HDT6") {
+				return ["В доставке", "Ваш заказ передан в доставку!"];
+			} else if ($stageId == "C1:WON") {
+				return ["Доставлен", "Спасибо за заказ! Пожалуйста, оцените качество обслуживания: https://yandex.ru"];
+			}
+		}
+		
+		try {
+			$notificationsQueueService = new \Otus\Service\NotificationsQueueService();
+			
+			[$stage, $text] = resolveDealStage($arFields['STAGE_ID']);
+			
+			$addResult = $notificationsQueueService->add($arFields['ID'], $stage, $text);
+			
+			if (!$addResult) {
+				return false;
+			}
+			
+			return $addResult->isSuccess();
+		} catch (\Throwable $ex) {
+			AddMessage2Log($ex->getMessage());
+		}
+	}
+	
+
+});
+
+// TODO: вынести определение функции в отдельный класс
+// TODO: исправить баг: при изменении сделки на стадии "Готов" возможно лишнее списание продуктов
+$eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function($arFields) {
 	// статус "Готов"
 	if ($arFields["STAGE_ID"] == "C1:FINAL_INVOICE") {
 		$dealItemService = new \Otus\Service\DealItemService();

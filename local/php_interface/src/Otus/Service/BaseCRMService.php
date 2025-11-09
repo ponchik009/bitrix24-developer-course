@@ -28,4 +28,16 @@ abstract class BaseCRMService {
 			}
 		}
 	}
+	
+	public function resolveEnumItemByValue($enumCode, $value) {
+		$result = null;
+		
+		foreach ($this->enums[$enumCode] as $enumItem) {
+			if ($enumItem['VALUE'] == $value) {
+				$result = $enumItem;
+			}
+		}
+		
+		return $result;
+	}
 }
