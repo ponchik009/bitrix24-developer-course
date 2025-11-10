@@ -76,7 +76,7 @@ $eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function
 				$removing[] = [
 					'branchId' => $currentUserBranch['id'],
 					'productId' => $additive['product']['id'],
-					'amount' => $additive['additive']['consumption']
+					'amount' => $additive['additive']['consumption'] * ($item['quantity'] ?? 1)
 				];
 			}
 			
@@ -87,7 +87,7 @@ $eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function
 				$removing[] = [
 					'branchId' => $currentUserBranch['id'],
 					'productId' => $consumtion['product']['id'],
-					'amount' => $consumtion['consumption']
+					'amount' => $consumtion['consumption'] * ($item['quantity'] ?? 1)
 				];
 			}
 		}
