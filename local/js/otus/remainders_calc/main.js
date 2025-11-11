@@ -20,13 +20,11 @@
 			const container = popup.contentContainer;
 			const endButton = container.querySelector(".ui-btn-icon-stop");
 			
-			// сценарий, когда рабочий день начат
 			if (!endButton) {
 				console.log("Не нашел кнопку для завершения рабочего дня");
 				return;
 			}
 			
-			// сценарий, когда рабочий день не начат
 			const endButtonCopy = endButton.cloneNode(true);
 			endButton.replaceWith(endButtonCopy);
 

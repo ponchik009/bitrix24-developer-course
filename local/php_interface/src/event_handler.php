@@ -13,6 +13,9 @@ $eventManager->addEventHandlerCompatible('rest', 'OnRestServiceBuildDescription'
 $eventManager->addEventHandler('main', 'OnProlog', ['Otus\Event\JsExtensionsRegister', 'registerExtensions']);
 
 // TODO: вынести определение функции в отдельный класс
+/**
+ * Формирование уведомлений
+ */
 $eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function($arFields) {
 	// статусы Готовится, Готов, В доставке, Доставлен
 	if (
@@ -55,6 +58,9 @@ $eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function
 
 // TODO: вынести определение функции в отдельный класс
 // TODO: исправить баг: при изменении сделки на стадии "Готов" возможно лишнее списание продуктов
+/**
+ * Списывание продуктов
+ */
 $eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function($arFields) {
 	// статус "Готов"
 	if ($arFields["STAGE_ID"] == "C1:FINAL_INVOICE") {
@@ -102,6 +108,9 @@ $eventManager->addEventHandlerCompatible('crm', 'OnAfterCrmDealUpdate', function
 
 // TODO: переписать в нормальный вид, отвязаться от идентификатора типа
 // TODO: вынести определение функции в отдельный класс
+/**
+ * Привязка списания к филиалу
+ */
 $eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemAdd_1072', function($item) {
 	$productRemovingService = new \Otus\Service\ProductRemovingService();
 	$productRemainderService = new \Otus\Service\ProductRemainderService();
@@ -112,7 +121,7 @@ $eventManager->addEventHandlerCompatible('crm', 'OnCrmDynamicItemAdd_1072', func
 	$bindingResult = $productRemovingService->bindRemovingToBranch($item, $userBranch['id']);
 	
 	if (!$bindingResult) {
-		throw new \Exception("Не удалось привязать отдел {$userBranch['id']} к элементу списания");
+		throw new \Exception("Не удалось привязать филиал {$userBranch['id']} к элементу списания");
 	}
 	
 	$syncResult = $productRemainderService->reduceProductBalance([
